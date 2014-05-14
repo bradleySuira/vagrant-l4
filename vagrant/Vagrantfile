@@ -1,0 +1,47 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  config.vm.define :dev_l4 do |devlv4_config|
+
+      devlv4_config.vm.box = "precise32"
+      devlv4_config.vm.box_url = "http://files.vagrantup.com/precise32.box"
+      # If true, then any SSH connections made will enable agent forwarding.
+      # Default value: false
+      devlv4_config.ssh.forward_agent = true
+
+      devlv4_config.vm.network :forwarded_port, guest: 80, host: 8080, auto_correct: true
+      devlv4_config.vm.network :forwarded_port, guest: 3306, host: 8089, auto_correct: true
+      # This will give the machine a static IP uncomment to enable
+      devlv4_config.vm.network :private_network, ip: "192.168.56.101"
+
+
+      # Share an additional folder to the guest VM. The first argument is
+      devlv4_config.vm.hostname = "devl4"
+      devlv4_config.vm.synced_folder "../", "/var/www",
+                                    :nfs => true,
+                                    :mount_options => ['nolock,vers=3,udp,noatime']
+      devlv4_config.vm.provision :shell, :inline => "echo \"America/Panama\" | sudo tee /etc/timezone && dpkg-reconfigure --frontend noninteractive tzdata"
+
+
+      # Provider-specific configuration so you can fine-tune various
+      # backing providers for Vagrant. These expose provider-specific options.
+      # Example for VirtualBox:
+      #
+      devlv4_config.vm.provider "virtualbox" do |vb|
+        # Use VBoxManage to customize the VM. For example to change memory:
+        vb.name = "devl4_precise32"
+        vb.customize ["modifyvm", :id, "--cpuexecutioncap", "30"]
+        vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+        vb.customize ["modifyvm", :id, "--memory", "384"]
+      end
+
+
+      # Enable provisioning
+      devlv4_config.vm.provision :shell, :path => "provision.sh"
+  end
+end
